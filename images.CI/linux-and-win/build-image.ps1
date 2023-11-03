@@ -11,7 +11,7 @@ param(
     [String] [Parameter (Mandatory=$false)] $VirtualNetworkName,
     [String] [Parameter (Mandatory=$false)] $VirtualNetworkRG,
     [String] [Parameter (Mandatory=$false)] $VirtualNetworkSubnet,
-    [String] [Parameter (Mandatory=$false)] $AllowedInboundIPAddresses
+    [String[]] [Parameter (Mandatory=$false)] $AllowedInboundIPAddresses
 )
 
 if (-not (Test-Path $TemplatePath))
