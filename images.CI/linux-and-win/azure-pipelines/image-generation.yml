@@ -74,7 +74,7 @@ jobs:
         $ManagedImageName = "${{ parameters.image_type }}-$(Build.BuildId)"
         Write-Host "##vso[task.setvariable variable=ManagedImageName;]$ManagedImageName"
 
-        $TempResourceGroupName = "packer-temp-$ManagedImageName"
+        $TempResourceGroupName = "pkr-Resource-Group-$ManagedImageName"
         Write-Host "##vso[task.setvariable variable=TempResourceGroupName;]$TempResourceGroupName"
 
   - task: AzureCLI@2
