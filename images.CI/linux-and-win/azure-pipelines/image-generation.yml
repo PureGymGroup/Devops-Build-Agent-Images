@@ -18,7 +18,7 @@ parameters:
   - name: agent_pool
     type: object
     default:
-      name: 'ci-agent-pool'
+      name: 'puregym-uks-ubuntu'
 
   - name: variable_group_name
     type: string
@@ -77,6 +77,19 @@ jobs:
         $TempResourceGroupName = "packer-temp-$ManagedImageName"
         Write-Host "##vso[task.setvariable variable=TempResourceGroupName;]$TempResourceGroupName"
 
+  - task: AzureCLI@2
+    displayName: "Set Azure Subscription Variables"
+    inputs:
+      azureSubscription: 'Development Tools DT'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        echo "##vso[task.setvariable variable=AZURE_SUBSCRIPTION;issecret=true]$(az account show --query="id" -o tsv)"
+        echo "##vso[task.setvariable variable=CLIENT_ID;issecret=true]$servicePrincipalId"
+        echo "##vso[task.setvariable variable=CLIENT_SECRET;issecret=true]$servicePrincipalKey"
+        echo "##vso[task.setvariable variable=AZURE_TENANT;issecret=true]$tenantId"
+      addSpnToEnvironment: true
+
   - task: PowerShell@2
     displayName: 'Build VM'
     inputs:
@@ -91,9 +104,10 @@ jobs:
                  -SubscriptionId $(AZURE_SUBSCRIPTION) `
                  -TenantId $(AZURE_TENANT) `
                  -Location $(AZURE_LOCATION) `
-                 -VirtualNetworkName $(BUILD_AGENT_VNET_NAME) `
-                 -VirtualNetworkRG $(BUILD_AGENT_VNET_RESOURCE_GROUP) `
-                 -VirtualNetworkSubnet $(BUILD_AGENT_SUBNET_NAME)
+                 -AllowedInboundIPAddresses $(ALLOWED_INBOUND_IP_ADDRESSES)
+                #  -VirtualNetworkName $(BUILD_AGENT_VNET_NAME) `
+                #  -VirtualNetworkRG $(BUILD_AGENT_VNET_RESOURCE_GROUP) `
+                #  -VirtualNetworkSubnet $(BUILD_AGENT_SUBNET_NAME)
 
     env:
       PACKER_LOG: 1
@@ -143,19 +157,19 @@ jobs:
                         -PrefixToPathTrim "$(TemplateDirectoryPath)" `
                         -PrintTopNLongest 25
 
-  - ${{ if eq(parameters.create_release, true) }}:
-    - task: PowerShell@2
-      displayName: 'Create release for VM deployment'
-      inputs:
-        targetType: filePath
-        filePath: ./images.CI/linux-and-win/create-release.ps1
-        arguments: -BuildId $(Build.BuildId) `
-                   -Organization $(RELEASE_TARGET_ORGANIZATION) `
-                   -DefinitionId $(RELEASE_TARGET_DEFINITION_ID) `
-                   -Project $(RELEASE_TARGET_PROJECT) `
-                   -ImageType "${{ parameters.image_type }}" `
-                   -ManagedImageName "$(ManagedImageName)" `
-                   -AccessToken $(RELEASE_TARGET_TOKEN)
+  # - ${{ if eq(parameters.create_release, true) }}:
+  #   - task: PowerShell@2
+  #     displayName: 'Create release for VM deployment'
+  #     inputs:
+  #       targetType: filePath
+  #       filePath: ./images.CI/linux-and-win/create-release.ps1
+  #       arguments: -BuildId $(Build.BuildId) `
+  #                  -Organization $(RELEASE_TARGET_ORGANIZATION) `
+  #                  -DefinitionId $(RELEASE_TARGET_DEFINITION_ID) `
+  #                  -Project $(RELEASE_TARGET_PROJECT) `
+  #                  -ImageType "${{ parameters.image_type }}" `
+  #                  -ManagedImageName "$(ManagedImageName)" `
+  #                  -AccessToken $(RELEASE_TARGET_TOKEN)
 
   - task: PowerShell@2
     displayName: 'Clean up resources'
